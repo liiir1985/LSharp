@@ -56,9 +56,14 @@ namespace CLRSharp
             {
                 foreach (var t in module.Types)
                 {
-
-                    mapType[t.FullName] = new Type_Common_CLRSharp(this, t);
-
+                    try
+                    {
+                        mapType[t.FullName] = new Type_Common_CLRSharp(this, t);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.Log_Error(string.Format("无法加载类型:{0}\n{1}", t, ex));
+                    }
                 }
             }
 

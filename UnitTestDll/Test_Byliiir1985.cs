@@ -52,6 +52,18 @@ namespace UnitTestDll
             Logger.Log(SingletonTest.Inst.foo());
         }
 
+        public static void UnitTest_Generics2()
+        {
+            //如果一个类继承一个泛型参数为这个类本身的泛型类，就没法正确找到该类型了
+            Logger.Log(Singleton<ReturnClass>.Inst.ToString());
+        }
+
+        public static void UnitTest_Generics3()
+        {
+            //如果一个类继承一个泛型参数为这个类本身的泛型类，就没法正确找到该类型了
+            Logger.Log(new List<NestedTest>().ToString());
+        }
+
         public static void UnitTest_NestedGenerics()
         {
             //如果一个嵌套的类是泛型类参数，则这个类无法被找到
@@ -97,7 +109,7 @@ namespace UnitTestDll
     {
         private static T _inst;
 
-        protected Singleton()
+        public Singleton()
         {
         }
 
