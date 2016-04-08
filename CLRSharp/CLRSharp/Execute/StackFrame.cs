@@ -208,12 +208,19 @@ namespace CLRSharp
         }
         public object Return()
         {
-
+            if (_params != null)
+            {
+                foreach (var i in _params)
+                {
+                    VBox box = i as VBox;
+                    if (box != null)
+                        ValueOnStack.UnUse(box);
+                }
+            }
             this.slotVar.ClearVBox();
             if (this.stackCalc.Count == 0) return null;
             object ret = stackCalc.Pop();
             this.stackCalc.ClearVBox();
-
             return ret;
         }
         void FillArray(object array, byte[] bytes)
