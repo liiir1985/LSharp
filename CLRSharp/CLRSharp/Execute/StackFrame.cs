@@ -1020,7 +1020,16 @@ namespace CLRSharp
             {
                 if (type == RefType.arg)
                 {
-                    frame._params[pos] = obj;
+                    var p = frame._params[pos];
+                    if (p is VBox)
+                    {
+                        if (obj is VBox)
+                            ((VBox)p).Set((VBox)obj);
+                        else
+                            ((VBox)p).SetDirect(obj);
+                    }
+                    else
+                        frame._params[pos] = obj;
                 }
                 else if (type == RefType.loc)
                 {
@@ -1028,7 +1037,16 @@ namespace CLRSharp
                     {
                         frame.slotVar.Add(null);
                     }
-                    frame.slotVar[pos] = obj;
+                    var loc = frame.slotVar[pos];
+                    if (loc is VBox)
+                    {
+                        if (obj is VBox)
+                            ((VBox)loc).Set((VBox)obj);
+                        else 
+                            ((VBox)loc).SetDirect(obj);
+                    }
+                    else
+                        frame.slotVar[pos] = obj;
                 }
                 else if (type == RefType.field)
                 {
