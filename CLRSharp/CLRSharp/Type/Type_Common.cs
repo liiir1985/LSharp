@@ -72,6 +72,10 @@ namespace CLRSharp
         }
         IMethod GetVMethod(IMethod _base);
 
+        /// <summary>
+        /// 初始化时有可能BaseType还未加载上来就已经被初始化，就会出错
+        /// </summary>
+        void InitializeBaseType();
         bool ContainBase(Type t);
         bool HasSysBase
         {

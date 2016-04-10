@@ -374,7 +374,8 @@ namespace CLRSharp
             else if (token is Mono.Cecil.FieldReference)
             {
                 Mono.Cecil.FieldReference field = token as Mono.Cecil.FieldReference;
-                var type = GetType(field.DeclaringType.FullName);
+                string fullname = field.DeclaringType.IsGenericInstance ? field.DeclaringType.GetElementType().FullName : field.DeclaringType.FullName;
+                var type = GetType(fullname);
                 __field = type.GetField(field.Name);
 
 

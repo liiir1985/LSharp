@@ -63,7 +63,14 @@ namespace CLRSharp
             }
             return t;
         }
+
         public Type_Common_CLRSharp(ICLRSharp_Environment env, Mono.Cecil.TypeDefinition type)
+            : this(env, type, null)
+        {
+
+        }
+
+        public Type_Common_CLRSharp(ICLRSharp_Environment env, Mono.Cecil.TypeDefinition type, ICLRType[] subtype)
         {
             this.env = env;
             this.type_CLRSharp = type;
@@ -71,6 +78,21 @@ namespace CLRSharp
             {
                 _isenum = true;
             }
+            
+            foreach (var m in this.type_CLRSharp.Methods)
+            {
+                if (m.Name == ".cctor")
+                {
+                    NeedCCtor = true;
+                    break;
+                }
+            }
+
+            SubTypes = subtype;
+        }
+
+        public void InitializeBaseType()
+        {
             if (type_CLRSharp.BaseType != null)
             {
                 BaseType = env.GetType(type_CLRSharp.BaseType.FullName);
@@ -102,12 +124,12 @@ namespace CLRSharp
 
                             if (bWarning & env.GetCrossBind(ts) == null)
                             {
-                               
+
                                 if (ts.IsInterface)
                                 {
-                                    foreach(var t in ts.GetInterfaces())
+                                    foreach (var t in ts.GetInterfaces())
                                     {
-                                        if(env.GetCrossBind(t)!=null)
+                                        if (env.GetCrossBind(t) != null)
                                         {
                                             bWarning = false;
                                             break;
@@ -125,16 +147,8 @@ namespace CLRSharp
                     }
                 }
             }
-            foreach (var m in this.type_CLRSharp.Methods)
-            {
-                if (m.Name == ".cctor")
-                {
-                    NeedCCtor = true;
-                    break;
-                }
-            }
-
         }
+
         public IMethod GetVMethod(IMethod _base)
         {
             IMethod _method = null;
@@ -389,6 +403,7 @@ namespace CLRSharp
                 if (stype.Name == fullname)
                 {
                     var itype = new Type_Common_CLRSharp(env, stype);
+                    itype.InitializeBaseType();
                     env.RegType(itype);
                     return itype;
                 }

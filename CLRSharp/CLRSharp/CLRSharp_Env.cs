@@ -54,16 +54,24 @@ namespace CLRSharp
             //mapModule[module.Name] = module;
             if (module.HasTypes)
             {
+                List<ICLRType_Sharp> types = new List<ICLRType_Sharp>();
                 foreach (var t in module.Types)
                 {
                     try
                     {
-                        mapType[t.FullName] = new Type_Common_CLRSharp(this, t);
+                        ICLRType_Sharp type = new Type_Common_CLRSharp(this, t);
+                        mapType[t.FullName] = type;
+                        types.Add(type);
                     }
                     catch (Exception ex)
                     {
                         logger.Log_Error(string.Format("无法加载类型:{0}\n{1}", t, ex));
                     }
+                }
+
+                foreach(var t in types)
+                {
+                    t.InitializeBaseType();
                 }
             }
 
@@ -101,6 +109,74 @@ namespace CLRSharp
         {
             return moduleref.ToArray();
         }
+
+        List<string> ParseSubType(string fullname)
+        {
+            List<string> res = new List<string>();
+            StringBuilder sb = new StringBuilder();
+            int depth = 0;
+            foreach (var i in fullname)
+            {
+                if (i == '/' && depth == 0)
+                {
+                    res.Add(sb.ToString());
+                    sb.Length = 0;
+                    continue;
+                }
+                sb.Append(i);
+                if(i == '<')
+                {
+                    depth++;
+                }
+                else if(i == '>')
+                {
+                    depth--;
+                }
+            }
+            if (sb.Length > 0)
+                res.Add(sb.ToString());
+            return res;
+        }
+
+        public void ParseGenericType(string fullname, out string baseType, out string[] genericParams)
+        {
+            StringBuilder sb = new StringBuilder();
+            int depth = 0;
+            int idx = 0;
+            int cnt = 0;
+            baseType = "";
+            genericParams = null;
+            foreach (var i in fullname)
+            {
+                if (i == '<')
+                {
+                    depth++;
+                    if (depth == 1)
+                    {
+                        baseType = sb.ToString();
+                        sb.Length = 0;
+                        cnt = int.Parse(baseType.Substring(baseType.IndexOf('`') + 1));
+                        genericParams = new string[cnt];
+                        continue;
+                    }
+                }
+                if (i == ',' && depth == 1)
+                {
+                    genericParams[idx++] = sb.ToString();
+                    sb.Length = 0;
+                }
+                if (i == '>')
+                {
+                    depth--;
+                    if (depth == 0)
+                        continue;
+                }
+                sb.Append(i);
+            }
+            if (sb.Length > 0)
+                genericParams[idx] = sb.ToString();
+        }
+
         //得到类型的时候应该得到模块内Type或者真实Type
         //一个统一的Type,然后根据具体情况调用两边
 
@@ -115,20 +191,33 @@ namespace CLRSharp
                     List<ICLRType> subTypes = new List<ICLRType>();
                     if (fullname.Contains("<>") || fullname.Contains("/"))//匿名类型
                     {
-                        string[] subts = fullname.Split('/');
-                        ICLRType ft = GetType(subts[0]);
-                        if (ft is ICLRType_Sharp)
+                        List<string> subts = ParseSubType(fullname);
+                        if (subts.Count > 1)
                         {
-                            for (int i = 1; i < subts.Length; i++)
+                            ICLRType ft = GetType(subts[0]);
+                            if (ft is ICLRType_Sharp)
                             {
-                                ft = ft.GetNestType(this, subts[i]);
+                                for (int i = 1; i < subts.Count; i++)
+                                {
+                                    ft = ft.GetNestType(this, subts[i]);
+                                }
+                                return ft;
                             }
-                            return ft;
                         }
+                    }
+
+                    bool isGeneric = fullname.Contains("<");
+                    ICLRType genericType = null;
+                    if (isGeneric)
+                        genericType = TryMakeGenericType(fullname);
+                    if(genericType != null)
+                    {
+                        mapType[fullname] = genericType;
+                        return genericType;
                     }
                     string fullnameT = fullname;//.Replace('/', '+');
 
-                    if (fullnameT.Contains("<"))
+                    if (isGeneric)
                     {
                         string outname = "";
                         int depth = 0;
@@ -268,6 +357,29 @@ namespace CLRSharp
             }
         }
 
+        public ICLRType TryMakeGenericType(string fullname)
+        {
+            string baseTypeName;
+            string[] param;
+            ParseGenericType(fullname, out baseTypeName, out param);
+            ICLRType baseType = GetType(baseTypeName);
+            if (baseType is ICLRType_Sharp && param != null && param.Length > 0)
+            {
+                ICLRType[] p = new ICLRType[param.Length];
+                for(int i = 0; i < param.Length; i++)
+                {
+                    p[i] = GetType(param[i]);
+                    if (p[i] == null)
+                        return null;
+                }
+
+                var res = new Type_Common_CLRSharp(this, ((ICLRType_Sharp)baseType).type_CLRSharp, p);
+                res.InitializeBaseType();
+                return res;
+            }
+            else
+                return null;
+        }
 
         public ICLRType GetType(System.Type systemType)
         {
