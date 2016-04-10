@@ -54,13 +54,12 @@ namespace UnitTestDll
 
         public static void UnitTest_Generics2()
         {
-            //如果一个类继承一个泛型参数为这个类本身的泛型类，就没法正确找到该类型了
+            //如果一个泛型类和泛型参数都是L#中的类，就无法正确找到该类型了
             Logger.Log(Singleton<ReturnClass>.Inst.ToString());
         }
 
         public static void UnitTest_Generics3()
         {
-            //如果一个类继承一个泛型参数为这个类本身的泛型类，就没法正确找到该类型了
             Logger.Log(new List<NestedTest>().ToString());
         }
 
@@ -100,9 +99,10 @@ namespace UnitTestDll
 
     class SingletonTest : Singleton<SingletonTest>
     {
+        public string Test { get { return "bar"; } }
         public string foo()
         {
-            return "bar";
+            return Inst.Test;
         }
     }
     class Singleton<T> where T : new()
