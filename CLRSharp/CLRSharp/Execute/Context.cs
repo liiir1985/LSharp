@@ -234,7 +234,7 @@ namespace CLRSharp
         }
         Dictionary<int, IMethod> methodCache = new Dictionary<int, IMethod>();
         Dictionary<int, IField> fieldCache = new Dictionary<int, IField>();
-        public IMethod GetMethod(object token)
+        public IMethod GetMethod(object token, ICLRType declaringType)
         {
             try
             {
@@ -254,11 +254,11 @@ namespace CLRSharp
                     module = _ref.Module;
                     methodname = _ref.Name;
                     typename = _ref.DeclaringType.FullName;
-                    list = new MethodParamList(environment, _ref);
+                    list = new MethodParamList(environment, _ref, declaringType);
                     if (_ref.IsGenericInstance)
                     {
                         Mono.Cecil.GenericInstanceMethod gmethod = _ref as Mono.Cecil.GenericInstanceMethod;
-                        genlist = new MethodParamList(environment, gmethod);
+                        genlist = new MethodParamList(environment, gmethod, declaringType);
 
                     }
                 }
@@ -268,7 +268,7 @@ namespace CLRSharp
                     module = _def.Module;
                     methodname = _def.Name;
                     typename = _def.DeclaringType.FullName;
-                    list = new MethodParamList(environment, _def);
+                    list = new MethodParamList(environment, _def, declaringType);
                     if (_def.IsGenericInstance)
                     {
                         throw new NotImplementedException();

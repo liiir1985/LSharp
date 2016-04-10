@@ -464,7 +464,7 @@ namespace CLRSharp
             method_CLRSharp = method;
             ReturnType = type.env.GetType(method.ReturnType.FullName);
 
-            ParamList = new MethodParamList(type.env, method);
+            ParamList = new MethodParamList(type.env, method, type);
         }
         public string Name
         {
@@ -573,7 +573,7 @@ namespace CLRSharp
                 {
                     if (!method_CLRSharp.HasBody)
                         return null;
-                    _body = new CodeBody(this._DeclaringType.env, this.method_CLRSharp);
+                    _body = new CodeBody(this._DeclaringType.env, this.method_CLRSharp, this);
                     //(this.DeclaringType.env as CLRSharp_Environment).CreateCodeBody(this);
                 }
                 return _body;

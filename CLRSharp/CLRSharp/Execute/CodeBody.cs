@@ -231,10 +231,14 @@ namespace CLRSharp
 
     public class CodeBody
     {
+        Method_Common_CLRSharp owner;
+
+        public Method_Common_CLRSharp Owner { get { return owner; } }
         //以后准备用自定义Body采集一遍，可以先过滤处理掉Mono.Cecil的代码中的指向，执行会更快
-        public CodeBody(CLRSharp.ICLRSharp_Environment env, Mono.Cecil.MethodDefinition _def)
+        public CodeBody(CLRSharp.ICLRSharp_Environment env, Mono.Cecil.MethodDefinition _def, Method_Common_CLRSharp owner)
         {
             this.method = _def;
+            this.owner = owner;
             Init(env);
         }
         public MethodParamList typelistForLoc = null;
@@ -373,9 +377,7 @@ namespace CLRSharp
                     case CodeEx.Newobj:
                     case CodeEx.Ldftn:
                     case CodeEx.Ldvirtftn:
-
-                            this.tokenMethod = context.GetMethod(_p);
- 
+                            this.tokenMethod = context.GetMethod(_p, body.owner.DeclaringType); 
                         break;
                     case CodeEx.Ldc_I4:
                         this.tokenI32 = (int)_p;

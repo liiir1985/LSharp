@@ -50,7 +50,7 @@ namespace CLRSharp
         {
             return new MethodParamList(types);
         }
-        public MethodParamList(ICLRSharp_Environment env, Mono.Cecil.MethodReference method)
+        public MethodParamList(ICLRSharp_Environment env, Mono.Cecil.MethodReference method, ICLRType declaringType)
         {
             if (method.HasParameters)
             {
@@ -59,7 +59,7 @@ namespace CLRSharp
                 Mono.Cecil.GenericInstanceMethod gm = method as Mono.Cecil.GenericInstanceMethod;
                 MethodParamList _methodgen = null;
                 if (gm != null)
-                    _methodgen = new MethodParamList(env, gm);
+                    _methodgen = new MethodParamList(env, gm, declaringType);
                 foreach (var p in method.Parameters)
                 {
                     string paramname = p.ParameterType.FullName;
@@ -135,19 +135,27 @@ namespace CLRSharp
             }
             return env.GetType(typename);
         }
-        public MethodParamList(ICLRSharp_Environment env, Mono.Cecil.GenericInstanceMethod method)
+        
+        public MethodParamList(ICLRSharp_Environment env, Mono.Cecil.GenericInstanceMethod method, ICLRType declaringType)
         {
             foreach (var p in method.GenericArguments)
             {
                 string paramname = p.FullName;
                 if (p.IsGenericParameter)
                 {
-
-                    var typegen = method.DeclaringType as Mono.Cecil.GenericInstanceType;
-                    if (p.Name[0] == '!')
+                    if (method.DeclaringType.IsGenericInstance)
                     {
-                        int index = int.Parse(p.Name.Substring(1));
-                        paramname = typegen.GenericArguments[index].FullName;
+                        var typegen = method.DeclaringType as Mono.Cecil.GenericInstanceType;
+                        if (p.Name[0] == '!')
+                        {
+                            int index = int.Parse(p.Name.Substring(1));
+                            paramname = typegen.GenericArguments[index].FullName;
+                        }
+                    }
+                    else
+                    {
+                        
+                        throw new NotSupportedException("Need generic context");
                     }
                 }
                 var type = env.GetType(paramname);
