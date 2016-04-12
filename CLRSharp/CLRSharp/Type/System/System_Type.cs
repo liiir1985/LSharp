@@ -16,7 +16,7 @@ namespace CLRSharp
             get;
             private set;
         }
-        public ICLRType[] SubTypes
+        public KeyValuePair<string, ICLRType>[] SubTypes
         {
             get;
             private set;
@@ -26,7 +26,16 @@ namespace CLRSharp
             this.env = env;
             this.TypeForSystem = type;
             FullNameWithAssembly = type.AssemblyQualifiedName;
-            this.SubTypes = subtype;
+            if (type.IsGenericType && subtype != null && subtype.Length > 0)
+            {
+                var param = new KeyValuePair<string, ICLRType>[subtype.Length];
+                var names = type.GetGenericTypeDefinition().GetGenericArguments();
+                for (int i = 0; i < names.Length; i++)
+                {
+                    param[i] = new KeyValuePair<string, ICLRType>(names[i].Name, subtype[i]);
+                }
+                this.SubTypes = param;
+            }
         }
         public string Name
         {

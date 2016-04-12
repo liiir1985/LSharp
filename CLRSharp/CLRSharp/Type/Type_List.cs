@@ -143,18 +143,30 @@ namespace CLRSharp
                 string paramname = p.FullName;
                 if (p.IsGenericParameter)
                 {
-                    if (method.DeclaringType.IsGenericInstance)
+                    var types = declaringType.SubTypes;
+                    if (types != null && types.Length > 0)
                     {
-                        var typegen = method.DeclaringType as Mono.Cecil.GenericInstanceType;
                         if (p.Name[0] == '!')
                         {
+                            var typegen = method.DeclaringType as Mono.Cecil.GenericInstanceType;
                             int index = int.Parse(p.Name.Substring(1));
                             paramname = typegen.GenericArguments[index].FullName;
+                        }
+                        else
+                        {
+                            foreach (var i in types)
+                            {
+                                if(i.Key == p.Name)
+                                {
+                                    paramname = i.Value.FullName;
+                                    break;
+                                }
+                            }
                         }
                     }
                     else
                     {
-                        
+
                         throw new NotSupportedException("Need generic context");
                     }
                 }

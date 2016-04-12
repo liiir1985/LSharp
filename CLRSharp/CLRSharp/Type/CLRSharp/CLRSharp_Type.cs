@@ -27,7 +27,7 @@ namespace CLRSharp
             get;
             private set;
         }
-        public ICLRType[] SubTypes
+        public KeyValuePair<string, ICLRType>[] SubTypes
         {
             get;
             private set;
@@ -87,8 +87,15 @@ namespace CLRSharp
                     break;
                 }
             }
-
-            SubTypes = subtype;
+            if (type.HasGenericParameters && subtype != null)
+            {
+                var param = new KeyValuePair<string, ICLRType>[subtype.Length];
+                for (int i = 0; i < type.GenericParameters.Count; i++)
+                {
+                    param[i] = new KeyValuePair<string, ICLRType>(type.GenericParameters[i].Name, subtype[i]);
+                }
+                SubTypes = param;
+            }
         }
 
         public void InitializeBaseType()
@@ -183,7 +190,25 @@ namespace CLRSharp
 
         public string FullName
         {
-            get { return type_CLRSharp.FullName; }
+            get
+            {
+                if (SubTypes == null || SubTypes.Length == 0)
+                    return type_CLRSharp.FullName;
+                else
+                {
+                    StringBuilder sb = new StringBuilder();
+                    sb.Append(type_CLRSharp.FullName);
+                    sb.Append('<');
+                    for (int i = 0; i < SubTypes.Length; i++)
+                    {
+                        if (i > 0)
+                            sb.Append(", ");
+                        sb.Append(SubTypes[i].Value.FullName);
+                    }
+                    sb.Append('>');
+                    return sb.ToString();
+                }
+            }
         }
         public string FullNameWithAssembly
         {
@@ -449,6 +474,11 @@ namespace CLRSharp
         {
             return _isenum;
         }
+
+        public override string ToString()
+        {
+            return FullName;
+        }
     }
     public class Method_Common_CLRSharp : IMethod_Sharp
     {
@@ -462,7 +492,19 @@ namespace CLRSharp
             this._DeclaringType = type;
 
             method_CLRSharp = method;
-            ReturnType = type.env.GetType(method.ReturnType.FullName);
+            if (method.ReturnType.IsGenericParameter)
+            {
+                foreach (var i in type.SubTypes)
+                {
+                    if (i.Key == method.ReturnType.Name)
+                    {
+                        ReturnType = i.Value;
+                        break;
+                    }
+                }
+            }
+            else
+                ReturnType = type.env.GetType(method.ReturnType.FullName);
 
             ParamList = new MethodParamList(type.env, method, type);
         }
@@ -589,9 +631,20 @@ namespace CLRSharp
         public Field_Common_CLRSharp(Type_Common_CLRSharp type, Mono.Cecil.FieldDefinition field)
         {
             this.field = field;
-            this.FieldType = type.env.GetType(field.FieldType.FullName);
+            if (field.FieldType.IsGenericParameter)
+            {
+                foreach (var i in type.SubTypes)
+                {
+                    if (i.Key == field.FieldType.Name)
+                    {
+                        this.FieldType = i.Value;
+                        break;
+                    }
+                }
+            }
+            else
+                this.FieldType = type.env.GetType(field.FieldType.FullName);
             this._DeclaringType = type;
-
         }
         public ICLRType FieldType
         {

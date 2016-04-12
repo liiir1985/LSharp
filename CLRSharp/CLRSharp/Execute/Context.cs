@@ -209,7 +209,7 @@ namespace CLRSharp
             return type;
         }
 
-        public ICLRType GetType(object token)
+        public ICLRType GetType(object token, ICLRType declaringType)
         {
             token.GetHashCode();
             Mono.Cecil.ModuleDefinition module = null;
@@ -223,6 +223,14 @@ namespace CLRSharp
             else if (token is Mono.Cecil.TypeReference)
             {
                 Mono.Cecil.TypeReference _ref = (token as Mono.Cecil.TypeReference);
+                if (_ref.IsGenericParameter)
+                {
+                    foreach (var i in declaringType.SubTypes)
+                    {
+                        if (i.Key == _ref.Name)
+                            return i.Value;
+                    }
+                }
                 module = _ref.Module;
                 typename = _ref.FullName;
             }
@@ -355,7 +363,7 @@ namespace CLRSharp
         //    methodCache[token.GetHashCode()] = m;
         //    return m;
         //}
-        public IField GetField(object token)
+        public IField GetField(object token, ICLRType declaringType)
         {
             IField __field = null;
             if (fieldCache.TryGetValue(token.GetHashCode(), out __field))
@@ -374,11 +382,19 @@ namespace CLRSharp
             else if (token is Mono.Cecil.FieldReference)
             {
                 Mono.Cecil.FieldReference field = token as Mono.Cecil.FieldReference;
-                string fullname = field.DeclaringType.IsGenericInstance ? field.DeclaringType.GetElementType().FullName : field.DeclaringType.FullName;
-                var type = GetType(fullname);
-                __field = type.GetField(field.Name);
-
-
+                if (field.DeclaringType.IsGenericInstance)
+                {
+                    if (((Mono.Cecil.GenericInstanceType) field.DeclaringType).GenericArguments[0].IsGenericParameter && field.DeclaringType.Name == declaringType.Name)
+                    {
+                        __field = declaringType.GetField(field.Name);
+                    }
+                }
+                if (__field == null)
+                {
+                    string fullname = field.DeclaringType.IsGenericInstance ? field.DeclaringType.GetElementType().FullName : field.DeclaringType.FullName;
+                    var type = GetType(fullname);
+                    __field = type.GetField(field.Name);
+                }
             }
             //else if(token is CLRSharp_Instance)
             // {
@@ -393,7 +409,7 @@ namespace CLRSharp
             fieldCache[token.GetHashCode()] = __field;
             return __field;
         }
-        object GetToken(object token)
+        object GetToken(object token, ICLRType declaringType)
         {
             if (token is Mono.Cecil.FieldDefinition || token is Mono.Cecil.FieldReference)
             {
@@ -401,13 +417,13 @@ namespace CLRSharp
                 if (def != null && def.Name[0] == '$') return def.InitialValue;
                 //都是用来初始化数组的方法，忽略
 
-                return GetField(token);
+                return GetField(token, declaringType);
 
             }
 
             else if (token is Mono.Cecil.TypeDefinition || token is Mono.Cecil.TypeReference)
             {
-                return GetType(token);
+                return GetType(token, declaringType);
             }
             else
             {
@@ -462,7 +478,7 @@ namespace CLRSharp
             {
                 if (eh.HandlerType == ExceptionHandlerType.Catch)
                 {
-                    Type ehtype = GetType(eh.CatchType).TypeForSystem;
+                    Type ehtype = GetType(eh.CatchType, body.Owner.DeclaringType).TypeForSystem;
                     if (ehtype == err.GetType() || err.GetType().IsSubclassOf(ehtype))
                     //if(GetType(eh.CatchType)== environment.GetType(err.GetType()))
                     {
@@ -487,7 +503,7 @@ namespace CLRSharp
                                         ehNear = eh;
                                         ehNearB = GetBaseCount(ehtype, err.GetType());
                                     }
-                                    else if (GetType(ehNear.CatchType).TypeForSystem == err.GetType())//上次找到的就是第一，不用比了
+                                    else if (GetType(ehNear.CatchType, body.Owner.DeclaringType).TypeForSystem == err.GetType())//上次找到的就是第一，不用比了
                                     {
                                         continue;
                                     }
@@ -1042,7 +1058,7 @@ namespace CLRSharp
                         stack.Isinst(this, _code.tokenType);
                         break;
                     case CodeEx.Ldtoken:
-                        stack.Ldtoken(this, GetToken(_code.tokenUnknown));
+                        stack.Ldtoken(this, GetToken(_code.tokenUnknown, stack.codebody.Owner.DeclaringType));
                         break;
 
                     case CodeEx.Ldftn:

@@ -360,7 +360,7 @@ namespace CLRSharp
                     case CodeEx.Initobj:
                     case CodeEx.Castclass:
                     case CodeEx.Newarr:
-                        this.tokenType = context.GetType(_p);
+                        this.tokenType = context.GetType(_p, body.Owner.DeclaringType);
                         //this.tokenUnknown = _p;
                         break;
                     case CodeEx.Ldfld:
@@ -369,7 +369,7 @@ namespace CLRSharp
                     case CodeEx.Ldsflda:
                     case CodeEx.Stfld:
                     case CodeEx.Stsfld:
-                        this.tokenField = context.GetField(_p);
+                        this.tokenField = context.GetField(_p, body.owner.DeclaringType);
                         //this.tokenUnknown = _p;
                         break;
                     case CodeEx.Call:

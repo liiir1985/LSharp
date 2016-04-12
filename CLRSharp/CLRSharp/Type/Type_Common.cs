@@ -46,7 +46,8 @@ namespace CLRSharp
         bool IsInst(object obj);
 
         ICLRType GetNestType(ICLRSharp_Environment env, string fullname);
-        ICLRType[] SubTypes
+
+        KeyValuePair<string, ICLRType>[] SubTypes
         {
             get;
         }
