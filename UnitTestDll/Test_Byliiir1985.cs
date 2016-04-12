@@ -49,7 +49,12 @@ namespace UnitTestDll
         public static void UnitTest_Generics()
         {
             //如果一个类继承一个泛型参数为这个类本身的泛型类，就没法正确找到该类型了
+            SingletonTest.Inst.Test = "bar";
             Logger.Log(SingletonTest.Inst.foo());
+            SingletonTest2.Inst.Test = 2;
+            Logger.Log(SingletonTest2.Inst.foo());
+
+            Logger.Log(SingletonTest2.IsSingletonInstance(SingletonTest2.Inst).ToString());
         }
 
         public static void UnitTest_Generics2()
@@ -99,13 +104,22 @@ namespace UnitTestDll
 
     class SingletonTest : Singleton<SingletonTest>
     {
-        public string Test { get { return "bar"; } }
+        public string Test { get; set; }
         public string foo()
         {
             return Inst.Test;
         }
     }
-    class Singleton<T> where T : new()
+
+    class SingletonTest2 : Singleton<SingletonTest2>
+    {
+        public int Test { get; set; }
+        public string foo()
+        {
+            return Inst.Test.ToString();
+        }
+    }
+    class Singleton<T> where T : class,new()
     {
         private static T _inst;
 
@@ -117,12 +131,17 @@ namespace UnitTestDll
         {
             get
             {
-                if (Singleton<T>._inst == null)
+                if (_inst == null)
                 {
-                    Singleton<T>._inst = (default(T) == null) ? Activator.CreateInstance<T>() : default(T);
+                    _inst = Activator.CreateInstance<T>();
                 }
-                return Singleton<T>._inst;
+                return _inst;
             }
+        }
+
+        public static bool IsSingletonInstance(T inst)
+        {
+            return _inst == inst;
         }
     }
 }
