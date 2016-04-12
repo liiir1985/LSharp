@@ -54,6 +54,8 @@ namespace UnitTestDll
             SingletonTest2.Inst.Test = 2;
             Logger.Log(SingletonTest2.Inst.foo());
 
+            Logger.Log(SingletonTest2.Inst.GetString<SingletonTest>(SingletonTest.Inst));
+
             Logger.Log(SingletonTest2.IsSingletonInstance(SingletonTest2.Inst).ToString());
         }
 
@@ -133,10 +135,16 @@ namespace UnitTestDll
             {
                 if (_inst == null)
                 {
-                    _inst = Activator.CreateInstance<T>();
+                    //_inst = Activator.CreateInstance<T>();
+                    _inst = default(T);//L# 的default（T）等价于Activator.CreateInstance<T>()， Activator.CreateInstance<T>()会调用出错
                 }
                 return _inst;
             }
+        }
+
+        public string GetString<K>(K obj)
+        {
+            return obj.ToString();
         }
 
         public static bool IsSingletonInstance(T inst)
