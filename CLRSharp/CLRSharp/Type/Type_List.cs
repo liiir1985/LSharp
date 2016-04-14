@@ -65,7 +65,7 @@ namespace CLRSharp
                     string paramname = p.ParameterType.FullName;
 
                     if (p.ParameterType.IsGenericParameter)
-                    {
+                    {   
                         if (p.ParameterType.Name.Contains("!!"))
                         {
                             int index = int.Parse(p.ParameterType.Name.Substring(2));
@@ -75,6 +75,40 @@ namespace CLRSharp
                         {
                             int index = int.Parse(p.ParameterType.Name.Substring(1));
                             paramname = _typegen.GenericArguments[index].FullName;
+                        }
+                        else
+                        {
+                            var itype = env.GetType(_typegen.FullName);
+                            if (itype.SubTypes != null)
+                            {
+                                bool found = false;
+                                foreach (var i in itype.SubTypes)
+                                {
+                                    if (i.Key == p.ParameterType.Name)
+                                    {
+                                        Add(i.Value);
+                                        found = true;
+                                        break;
+                                    }
+                                }
+                                if (found)
+                                    continue;
+                            }
+                            if (declaringType.SubTypes != null)
+                            {
+                                bool found =false;
+                                foreach (var i in declaringType.SubTypes)
+                                {
+                                    if (i.Key == p.ParameterType.Name)
+                                    {
+                                        Add(i.Value);
+                                        found = true;
+                                        break;
+                                    }
+                                }
+                                if (found)
+                                    continue;
+                            }
                         }
                     }
 

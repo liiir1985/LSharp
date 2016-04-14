@@ -18,7 +18,7 @@ namespace UnitTestDll
             System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
             sw.Start();
             int cnt = 0;
-            for (int i = 0; i < 100000; i++)
+            for (int i = 0; i < 500000; i++)
             {
                 cnt += i;
             }
@@ -61,8 +61,12 @@ namespace UnitTestDll
 
         public static void UnitTest_Generics2()
         {
-            //如果一个泛型类和泛型参数都是L#中的类，就无法正确找到该类型了
-            Logger.Log(Singleton<ReturnClass>.Inst.ToString());
+            SingletonTest.Inst.Test = "bar";
+            Logger.Log(SingletonTest.Inst.foo()); 
+            SingletonTest2.Inst.Test = 2;
+            Logger.Log(SingletonTest2.Inst.foo()); 
+            Logger.Log(SingletonTest2.Inst.GetString<SingletonTest>(SingletonTest.Inst));
+            Logger.Log(SingletonTest2.IsSingletonInstance(SingletonTest2.Inst).ToString());
         }
 
         public static void UnitTest_Generics3()

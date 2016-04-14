@@ -234,10 +234,21 @@ namespace CLRSharp
                         bool match = true;
                         for (int i = 0; i < ((types == null) ? 0 : types.Count); i++)
                         {
-                            var envtype = env.GetType(m.Parameters[i].ParameterType.FullName);
-                            if (envtype.IsEnum())
+                            if (m.Parameters[i].ParameterType.IsGenericParameter)
                             {
-                                if (envtype.TypeForSystem != types[i].TypeForSystem)
+                                bool found = false;
+                                foreach (var j in SubTypes)
+                                {
+                                    if (j.Key == m.Parameters[i].ParameterType.Name)
+                                    {
+                                        if (types[i] == j.Value)
+                                        {
+                                            found = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                                if (!found)
                                 {
                                     match = false;
                                     break;
@@ -245,15 +256,27 @@ namespace CLRSharp
                             }
                             else
                             {
-                                if (envtype != types[i])
+                                var envtype = env.GetType(m.Parameters[i].ParameterType.FullName);
+                                if (envtype.IsEnum())
                                 {
-                                    match = false;
-                                    break;
+                                    if (envtype.TypeForSystem != types[i].TypeForSystem)
+                                    {
+                                        match = false;
+                                        break;
+                                    }
+                                }
+                                else
+                                {
+                                    if (envtype != types[i])
+                                    {
+                                        match = false;
+                                        break;
+                                    }
                                 }
                             }
                         }
                         if (match)
-                            return new Method_Common_CLRSharp(this, m);
+                            return new Method_Common_CLRSharp(this, m, null, types);
                     }
                 }
             }
@@ -381,6 +404,66 @@ namespace CLRSharp
         }
         public IMethod GetMethodT(string funcname, MethodParamList ttypes, MethodParamList types)
         {
+            if (type_CLRSharp.HasMethods)
+            {
+                foreach (var m in type_CLRSharp.Methods)
+                {
+                    if (m.Name != funcname) continue;
+                    if ((types == null) ? !m.HasParameters : (m.Parameters.Count == types.Count))
+                    {
+                        bool match = true;
+                        for (int i = 0; i < ((types == null) ? 0 : types.Count); i++)
+                        {
+                            if (m.Parameters[i].ParameterType.IsGenericParameter)
+                            {
+
+                                if (m.HasGenericParameters)
+                                {
+                                    bool found = false;
+                                    for (int j = 0; j < m.GenericParameters.Count; j++)
+                                    {
+                                        if (m.GenericParameters[j].Name == m.Parameters[j].ParameterType.Name)
+                                        {
+                                            if (ttypes[j] == types[i])
+                                            {
+                                                found = true;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    if (!found)
+                                    {
+                                        match = false;
+                                        break;
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                var envtype = env.GetType(m.Parameters[i].ParameterType.FullName);
+                                if (envtype.IsEnum())
+                                {
+                                    if (envtype.TypeForSystem != types[i].TypeForSystem)
+                                    {
+                                        match = false;
+                                        break;
+                                    }
+                                }
+                                else
+                                {
+                                    if (envtype != types[i])
+                                    {
+                                        match = false;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        if (match)
+                            return new Method_Common_CLRSharp(this, m, ttypes, types);                        
+                    }
+                }
+            }
             return null;
         }
         public IField GetField(string name)
@@ -484,7 +567,7 @@ namespace CLRSharp
     {
         Type_Common_CLRSharp _DeclaringType;
 
-        public Method_Common_CLRSharp(Type_Common_CLRSharp type, Mono.Cecil.MethodDefinition method)
+        public Method_Common_CLRSharp(Type_Common_CLRSharp type, Mono.Cecil.MethodDefinition method, MethodParamList genList = null, MethodParamList plist = null)
         {
 
             if (method == null)
@@ -494,19 +577,35 @@ namespace CLRSharp
             method_CLRSharp = method;
             if (method.ReturnType.IsGenericParameter)
             {
-                foreach (var i in type.SubTypes)
+                if (genList != null && method.HasGenericParameters)
                 {
-                    if (i.Key == method.ReturnType.Name)
+                    for (int i = 0; i < method.GenericParameters.Count; i++)
                     {
-                        ReturnType = i.Value;
-                        break;
+                        if (method.GenericParameters[i].Name == method.ReturnType.Name)
+                        {
+                            ReturnType = genList[i];
+                            break;
+                        }
+                    }
+                }
+                if (ReturnType == null)
+                {
+                    foreach (var i in type.SubTypes)
+                    {
+                        if (i.Key == method.ReturnType.Name)
+                        {
+                            ReturnType = i.Value;
+                            break;
+                        }
                     }
                 }
             }
             else
                 ReturnType = type.env.GetType(method.ReturnType.FullName);
-
-            ParamList = new MethodParamList(type.env, method, type);
+            if (plist == null)
+                ParamList = new MethodParamList(type.env, method, type);
+            else
+                ParamList = plist;
         }
         public string Name
         {
