@@ -29,7 +29,7 @@ namespace CLRSharp
 
         string[] GetModuleRefNames();
         ICLRType GetType(System.Type systemType);
-
+        void ParseGenericType(string fullname, out string baseType, out string[] genericParams);
         void RegType(ICLRType type);
         ICLRSharp_Logger logger
         {

@@ -506,14 +506,38 @@ namespace CLRSharp
 
         public ICLRType GetNestType(ICLRSharp_Environment env, string fullname)
         {
+            string baseTypeName;
+            string[] param = null;
+            if (fullname.Contains("<"))
+                env.ParseGenericType(fullname, out baseTypeName, out param);
+            else
+                baseTypeName = fullname;
+           
             foreach (var stype in type_CLRSharp.NestedTypes)
             {
-                if (stype.Name == fullname)
+                if (stype.Name == baseTypeName)
                 {
-                    var itype = new Type_Common_CLRSharp(env, stype);
-                    itype.InitializeBaseType();
-                    env.RegType(itype);
-                    return itype;
+                    if (param != null && param.Length > 0)
+                    {
+                        ICLRType[] p = new ICLRType[param.Length];
+                        for (int i = 0; i < param.Length; i++)
+                        {
+                            p[i] = env.GetType(param[i]);
+                            if (p[i] == null)
+                                return null;
+                        }
+
+                        var res = new Type_Common_CLRSharp(env, stype, p);
+                        res.InitializeBaseType();
+                        return res;
+                    }
+                    else
+                    {
+                        var itype = new Type_Common_CLRSharp(env, stype);
+                        itype.InitializeBaseType();
+                        env.RegType(itype);
+                        return itype;
+                    }
                 }
             }
             return null;

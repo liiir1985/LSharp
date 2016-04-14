@@ -201,6 +201,7 @@ namespace CLRSharp
                                 {
                                     ft = ft.GetNestType(this, subts[i]);
                                 }
+                                mapType[fullname] = ft;
                                 return ft;
                             }
                         }
